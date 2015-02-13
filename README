@@ -1,0 +1,85 @@
+﻿This is a project to test all possible paths of a concurrent C program that uses pthreads in parallel using MPI. It requires at least 2 processes: 1 master to keep track of the paths explored and to assign new paths to the worker processes and at least 1 worker process. The program is very slow for more complex programs because it creates a tree in a pattern that resembles BFS. It only learns the possible thread choices at 1 new location per run. Below is a list of improvements that could be made:
+
+1: There is a concurrency issue when you specify a large number of worker processes all trying to read the port file at once that can create a deadlock. Using a smaller number of processes drastically reduces the chances of this happening. 
+
+2: Improve the learning cycle. It currently only learns about 1 synchronization spot per run. Improving this would increase speed. 
+
+3. Some cycle detection in early runs around thread creation to reduce computation needed. 
+
+
+My project is ran by using these steps:
+make
+./test.sh NUM_PROCESSES ./executable arg1 arg2......
+
+
+Pseudo code:
+
+Master
+
+p=1
+availableProcs=n-1
+trie t
+char status [nProc]
+
+while ( t.notExplored )
+	while (availableProc > 0 and t.status == NOT_STUCK)
+		while (tempF exists){}
+		create socket
+		send (socket) -> p
+		create tempF
+		write socket - > tempF
+		path = t.getPath
+		send(pathLen, path) - > p
+		availableProc--;	
+		status[p]=busy
+		p=p%(nProc-1)+1
+
+	for (i = 1:nProc)
+		if ( status[i] == busy )
+			read(i,pathlen)
+			read(i,path)
+			read(i,optsLen)
+			read(i,opts)
+			update(path,opts)
+			status[i] = not busy
+
+	//possible fix here to break
+
+
+Worker
+receive ( socket) 
+	if ( socket < 0 )
+		exit
+receive pathLen
+receive path
+write pathLen to socket
+write path to socket
+fork
+	child-exec testee process
+read pathLen nums from socket
+read path from socket
+read optsLen from socket
+read opts from socket
+close ( socket ) 
+
+send(pathLen) -> master
+send(path) - > master
+send(optslen) -> master
+send(opts) -> master
+
+
+
+Chess
+	first call needs to be guaranteed a socket to read and create
+read socket from file
+create socket
+destroy file
+
+read pathLen
+read path into array
+each synch point:
+	choose next path point
+first call after path ends:
+	find number of choices
+	write number of choices
+	write choices
